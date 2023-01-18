@@ -20,10 +20,23 @@ c.execute("""
 
 conn.commit()
 
+
+def remove(id):
+    def _remove():
+        c.execute("DELETE FROM todo WHERE id = ?", (id, ))
+        conn.commit()
+        render_todos()
+    return _remove
+    
+
 #Currying = retraso de ejecucion de una funcion
 def complete(id):
     def _complete():
-        print(id)
+        todo = c.execute("SELECT * from todo WHERE id=?",(id, )).fetchone()
+        c.execute("UPDATE todo SET completed = ? WHERE id = ?", (not todo[3], id))
+        conn.commit()
+        render_todos()
+        #print(id)
     return _complete
 
 
@@ -31,14 +44,20 @@ def complete(id):
 
 def render_todos():
     rows = c.execute("SELECT * FROM todo").fetchall()
-    print(rows)
+    #print(rows)
+    for widget in frame.winfo_children():
+        widget.destroy()
 
     for i in range(0, len(rows)):
         id = rows[i][0]
         completed = rows[i][3]
         description = rows[i][2]
-        ce = Checkbutton(frame, text=description, width=42, anchor='w', command= complete(id))
+        color = 'grey' if completed else 'blue'
+        ce = Checkbutton(frame, text=description, fg=color, width=42, anchor='w', command= complete(id))
         ce.grid(row=i, column=0, sticky='nswe')
+        btn = Button(frame, text='Borrar', command=remove(id))
+        btn.grid(row=i, column=1)
+        ce.select() if completed else ce.deselect()
 
 
 
